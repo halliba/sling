@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Sling
 {
-    internal static class StreamExtensions
+    public static class StreamExtensions
     {
         public static void CopyTo(this Stream source, Stream destination, int bufferSize, long sourceBytes, Action<long> progressCallback)
         {

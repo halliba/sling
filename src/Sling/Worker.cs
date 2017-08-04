@@ -2,7 +2,7 @@
 
 namespace Sling
 {
-    internal abstract class Worker
+    public abstract class Worker
     {
         protected readonly ushort Port;
         protected readonly int BufferSize;

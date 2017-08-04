@@ -8,9 +8,9 @@ using Newtonsoft.Json;
 
 namespace Sling
 {
-    internal delegate bool AcceptFileDelegate(string name, long size, string sender, IPAddress source);
+    public delegate bool AcceptFileDelegate(string name, long size, string sender, IPAddress source);
 
-    internal class ReceiveWorker : Worker
+    public class ReceiveWorker : Worker
     {
         private readonly UdpClient _udpClient;
         private AnnounceModel _model;

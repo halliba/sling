@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 
 namespace Sling
 {
-    internal class SendWorker : Worker
+    public class SendWorker : Worker
     {
         private readonly UdpClient _udpClient;
         private TcpListener _tcpListener;

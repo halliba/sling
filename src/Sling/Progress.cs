@@ -2,7 +2,7 @@
 
 namespace Sling
 {
-    internal static class Progress
+    public static class Progress
     {
         public static void Print(long total, long progress)
         {
