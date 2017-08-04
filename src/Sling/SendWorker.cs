@@ -49,23 +49,27 @@ namespace Sling
             _tcpListener = new TcpListener(new IPEndPoint(IPAddress.Any, _port));
             _tcpListener.Start();
 
-            var client = _tcpListener.AcceptTcpClientAsync().Result;
-            var stream = client.GetStream();
-            var bytes = new byte[12];
-            stream.Read(bytes, 0, 12);
-            if(!IsAccept(stream, bytes))
-                throw new Exception("no accept");
+            using (var client = _tcpListener.AcceptTcpClient())
+            {
+                using (var stream = client.GetStream())
+                {
+                    var bytes = new byte[12];
+                    stream.Read(bytes, 0, 12);
+                    if (!IsAccept(stream, bytes))
+                        throw new Exception("no accept");
 
-            var fileInfo = new FileInfo(FilePath);
-            var fileLength = fileInfo.Length;
-            var prefix = BitConverter.GetBytes(MagicNumber).Concat(BitConverter.GetBytes(fileLength)).ToArray();
-            stream.Write(prefix, 0, 12);
+                    var fileInfo = new FileInfo(FilePath);
+                    var fileLength = fileInfo.Length;
+                    var prefix = BitConverter.GetBytes(MagicNumber).Concat(BitConverter.GetBytes(fileLength)).ToArray();
+                    stream.Write(prefix, 0, 12);
 
-            var fileStream = fileInfo.OpenRead();
-            fileStream.CopyTo(stream, BufferSize, fileLength, prog => Progress.Print(fileLength, prog));
-
-            stream.Dispose();
-            fileStream.Dispose();
+                    using (var fileStream = fileInfo.OpenRead())
+                    {
+                        fileStream.CopyTo(stream, BufferSize, fileLength, prog => Progress.Print(fileLength, prog));
+                    }
+                }
+            }
+            _tcpListener.Stop();
 
             return ExitCodes.Ok;
         }

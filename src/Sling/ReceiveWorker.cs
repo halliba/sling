@@ -41,23 +41,26 @@ namespace Sling
             }
 
             if (FilePath == null) FilePath = _model.Filename;
-            var tcpClient = new TcpClient();
-            tcpClient.ConnectAsync(remoteEndPoint.Address, _model.Port).Wait();
-            try
+            using (var tcpClient = new TcpClient())
             {
-                var stream = tcpClient.GetStream();
+                tcpClient.ConnectAsync(remoteEndPoint.Address, _model.Port).Wait();
+                try
+                {
+                    using (var stream = tcpClient.GetStream())
+                    {
+                        var code = SendAccept(stream);
+                        if (code != ExitCodes.Ok)
+                            return code;
 
-                var code = SendAccept(stream);
-                if (code != ExitCodes.Ok)
-                    return code;
-
-                code = ReceiveFile(stream);
-                return code;
-            }
-            catch (IOException e)
-            {
-                Console.WriteLine("Can not read from remote source: " + e.Message);
-                return ExitCodes.RemoteStreamClosed;
+                        code = ReceiveFile(stream);
+                        return code;
+                    }
+                }
+                catch (IOException e)
+                {
+                    Console.WriteLine("Can not read from remote source: " + e.Message);
+                    return ExitCodes.RemoteStreamClosed;
+                }
             }
         }
 
@@ -80,14 +83,11 @@ namespace Sling
             if (BitConverter.ToUInt32(bytes, 0) != MagicNumber)
                 throw new Exception("No magic number");
             var fileLength = BitConverter.ToInt64(bytes, 4);
-            
-            var fileStream = File.Open(FilePath, FileMode.Create);
 
-            stream.CopyTo(fileStream, BufferSize, fileLength, prog => Progress.Print(fileLength, prog));
-            
-            stream.Dispose();
-            fileStream.Dispose();
-
+            using (var fileStream = File.Open(FilePath, FileMode.Create))
+            {
+                stream.CopyTo(fileStream, BufferSize, fileLength, prog => Progress.Print(fileLength, prog));
+            }
             return ExitCodes.Ok;
         }
     }
