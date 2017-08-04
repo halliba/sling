@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CAF3A6FA-C553-46FB-88D1-F4F1BCB6E65A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sling", "src\Sling\Sling.csproj", "{98F0E6D2-4034-4260-958E-D9085BBBE476}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{98F0E6D2-4034-4260-958E-D9085BBBE476}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98F0E6D2-4034-4260-958E-D9085BBBE476}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98F0E6D2-4034-4260-958E-D9085BBBE476}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98F0E6D2-4034-4260-958E-D9085BBBE476}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{98F0E6D2-4034-4260-958E-D9085BBBE476} = {CAF3A6FA-C553-46FB-88D1-F4F1BCB6E65A}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {58EE399D-1376-4C5D-9024-2F1DEC17EA47}
+	EndGlobalSection
+EndGlobal
