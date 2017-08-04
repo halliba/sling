@@ -34,7 +34,7 @@ namespace Sling
                 _model = JsonConvert.DeserializeObject<AnnounceModel>(rawText);
 
                 remoteEndPoint = received.RemoteEndPoint;
-                var sender = _model.Sender ?? Dns.GetHostEntry(remoteEndPoint.Address).HostName;
+                var sender = _model.Sender ?? Dns.GetHostEntryAsync(remoteEndPoint.Address).Result.HostName;
 
                 var accepted = _acceptFileCallback(_model.Filename, _model.FileSize, sender, remoteEndPoint.Address);
                 if (accepted) waitForFile = false;

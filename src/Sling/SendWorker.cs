@@ -49,7 +49,7 @@ namespace Sling
             _tcpListener = new TcpListener(new IPEndPoint(IPAddress.Any, _port));
             _tcpListener.Start();
 
-            using (var client = _tcpListener.AcceptTcpClient())
+            using (var client = _tcpListener.AcceptTcpClientAsync().Result)
             {
                 using (var stream = client.GetStream())
                 {
