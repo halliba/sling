@@ -8,6 +8,6 @@
 
         public long FileSize { get; set; }
 
-        public short Port { get; set; }
+        public ushort Port { get; set; }
     }
 }

@@ -12,7 +12,7 @@ namespace Sling
     {
         private readonly UdpClient _udpClient;
         private TcpListener _tcpListener;
-        private readonly short _port = (short) new Random().Next(0, short.MaxValue + 1);
+        private readonly ushort _port = (ushort) new Random().Next(0xC000, 0xFFFF + 1);
 
         public SendWorker(ushort port, int bufferSize, string filePath) : base(port, bufferSize, filePath)
         {
