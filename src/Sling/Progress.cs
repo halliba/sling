@@ -9,27 +9,38 @@ namespace Sling
             Console.Write($"\rProgress: {(double)progress /total:P} - {ToFileSize(progress)}/{ToFileSize(total)}");
         }
 
-        public static string ToFileSize(long size)
+        public static string ToFileSize(long size, bool useBinaryMode = false)
         {
-            if (size < 1024)
-                return size.ToString("F0") + " B";
+            string[] suffixes =
+            {
+                "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB",
+                "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"
+            };
 
-            if (size >> 10 < 1024)
-                return (size / (float)1024).ToString("F2") + " KB";
+            int s;
+            double factor;
+            if (useBinaryMode)
+            {
+                s = 7;
+                factor = 1024;
+            }
+            else
+            {
+                s = -1;
+                factor = 1000;
+            }
 
-            if (size >> 20 < 1024)
-                return ((size >> 10) / (float)1024).ToString("F2") + " MB";
+            double value = size;
+            if(value <= factor)
+                return $"{value} B";
 
-            if (size >> 30 < 1024)
-                return ((size >> 20) / (float)1024).ToString("F2") + " GB";
+            do
+            {
+                s++;
+                value /= factor;
+            } while (value >= factor);
 
-            if (size >> 40 < 1024)
-                return ((size >> 30) / (float)1024).ToString("F2") + " TB";
-
-            if (size >> 50 < 1024)
-                return ((size >> 40) / (float)1024).ToString("F2") + " PB";
-
-            return ((size >> 50) / (float)1024).ToString("F0") + " EB";
+            return $"{value:F2} {suffixes[s]}";
         }
     }
 }
