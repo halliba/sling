@@ -42,13 +42,13 @@ namespace Sling
             app.OnExecute(() => app.InternalExecute());
             return app.Execute(args);
         }
-
+        
         private int InternalExecute()
         {
             if (SendOption.HasValue() && ReceiveOption.HasValue())
             {
                 Console.WriteLine("Use either -s or -r option.");
-                return ReturnCodes.SendAndReceiveSpecified;
+                return ExitCodes.SendAndReceiveSpecified;
             }
 
             var isSend = !ReceiveOption.HasValue();
@@ -56,11 +56,11 @@ namespace Sling
             if (isSend && string.IsNullOrEmpty(file))
             {
                 Console.WriteLine("No file specified.");
-                return ReturnCodes.NoFileSpecified;
+                return ExitCodes.NoFileSpecified;
             }
             if (!string.IsNullOrEmpty(file) && !CheckFile(file))
             {
-                return ReturnCodes.InvalidFileSpecified;
+                return ExitCodes.InvalidFileSpecified;
             }
 
             ushort port = 56657;
@@ -70,7 +70,7 @@ namespace Sling
                 if (!canPortParse)
                 {
                     Console.WriteLine("Invalid port.");
-                    return ReturnCodes.InvalidPort;
+                    return ExitCodes.InvalidPort;
                 }
             }
 
@@ -81,7 +81,7 @@ namespace Sling
                 if (!canBufferParse)
                 {
                     Console.WriteLine("Invalid Buffer Size.");
-                    return ReturnCodes.InvalidBufferSize;
+                    return ExitCodes.InvalidBufferSize;
                 }
             }
 
@@ -95,9 +95,7 @@ namespace Sling
             var worker = isSend
                 ? (Worker) new SendWorker(port, bufferSize, file)
                 : new ReceiveWorker(port, bufferSize, file, AcceptFileCallback);
-            worker.Run();
-
-            return ReturnCodes.Ok;
+            return worker.Run();
         }
         
         private static bool CheckFile(string path)

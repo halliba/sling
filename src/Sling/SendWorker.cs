@@ -19,13 +19,17 @@ namespace Sling
             _udpClient = new UdpClient();
         }
 
-        public override void Run()
+        public override int Run()
         {
-            Announce();
-            WaitAndSendFile();
+            var code = Announce();
+            if (code != 0)
+                return code;
+
+            code = WaitAndSendFile();
+            return code;
         }
 
-        private void Announce()
+        private int Announce()
         {
             var model = new AnnounceModel
             {
@@ -37,9 +41,10 @@ namespace Sling
             var jsonModel = JsonConvert.SerializeObject(model);
             var rawModel = Encoding.Unicode.GetBytes(jsonModel);
             _udpClient.SendAsync(rawModel, rawModel.Length, new IPEndPoint(IPAddress.Broadcast, Port));
+            return ExitCodes.Ok;
         }
 
-        private void WaitAndSendFile()
+        private int WaitAndSendFile()
         {
             _tcpListener = new TcpListener(new IPEndPoint(IPAddress.Any, _port));
             _tcpListener.Start();
@@ -61,6 +66,8 @@ namespace Sling
 
             stream.Dispose();
             fileStream.Dispose();
+
+            return ExitCodes.Ok;
         }
 
         private bool IsAccept(Stream stream, byte[] bytes)

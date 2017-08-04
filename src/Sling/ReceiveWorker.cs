@@ -23,7 +23,7 @@ namespace Sling
             _udpClient = new UdpClient(port);
         }
 
-        public override void Run()
+        public override int Run()
         {
             var waitForFile = true;
             IPEndPoint remoteEndPoint = null;
@@ -32,8 +32,10 @@ namespace Sling
                 var received = _udpClient.ReceiveAsync().Result;
                 var rawText = Encoding.Unicode.GetString(received.Buffer);
                 _model = JsonConvert.DeserializeObject<AnnounceModel>(rawText);
+
                 remoteEndPoint = received.RemoteEndPoint;
                 var sender = _model.Sender ?? Dns.GetHostEntry(remoteEndPoint.Address).HostName;
+
                 var accepted = _acceptFileCallback(_model.Filename, _model.FileSize, sender, remoteEndPoint.Address);
                 if (accepted) waitForFile = false;
             }
@@ -41,13 +43,25 @@ namespace Sling
             if (FilePath == null) FilePath = _model.Filename;
             var tcpClient = new TcpClient();
             tcpClient.ConnectAsync(remoteEndPoint.Address, _model.Port).Wait();
-            var stream = tcpClient.GetStream();
-            SendAccept(stream);
+            try
+            {
+                var stream = tcpClient.GetStream();
 
-            ReceiveFile(stream);
+                var code = SendAccept(stream);
+                if (code != ExitCodes.Ok)
+                    return code;
+
+                code = ReceiveFile(stream);
+                return code;
+            }
+            catch (IOException e)
+            {
+                Console.WriteLine("Can not read from remote source: " + e.Message);
+                return ExitCodes.RemoteStreamClosed;
+            }
         }
 
-        private void SendAccept(Stream stream)
+        private int SendAccept(Stream stream)
         {
             var model = new AcceptModel {Filename = _model.Filename};
             var rawText = JsonConvert.SerializeObject(model);
@@ -55,9 +69,11 @@ namespace Sling
             var prefix = BitConverter.GetBytes(MagicNumber).Concat(BitConverter.GetBytes(rawData.Length)).ToArray();
             stream.Write(prefix, 0, prefix.Length);
             stream.Write(rawData, 0, rawData.Length);
+
+            return ExitCodes.Ok;
         }
 
-        private void ReceiveFile(Stream stream)
+        private int ReceiveFile(Stream stream)
         {
             var bytes = new byte[12];
             stream.Read(bytes, 0, 12);
@@ -71,6 +87,8 @@ namespace Sling
             
             stream.Dispose();
             fileStream.Dispose();
+
+            return ExitCodes.Ok;
         }
     }
 }

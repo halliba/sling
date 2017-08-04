@@ -17,6 +17,6 @@ namespace Sling
             FilePath = filePath;
         }
 
-        public abstract void Run();
+        public abstract int Run();
     }
 }
