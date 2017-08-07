@@ -2,11 +2,55 @@
 
 namespace Sling
 {
-    public static class Progress
+    public class Progress
     {
-        public static void Print(long total, long progress)
+        private readonly string _to;
+        private readonly long _total;
+        private readonly int _cursorTop;
+        private readonly bool _incoming;
+
+        private long _progress;
+
+        private Progress(bool incoming, string to, long total, int cursorTop)
         {
-            Console.Write($"\rProgress: {(double)progress /total:P} - {ToFileSize(progress)}/{ToFileSize(total)}");
+            _incoming = incoming;
+            _to = to;
+            _total = total;
+            _cursorTop = cursorTop;
+        }
+
+        public static Progress Incoming(string sender, long total)
+        {
+            var progress = new Progress(true, sender, total, Console.CursorTop);
+            progress.Print();
+            Console.WriteLine();
+            return progress;
+        }
+
+        public static Progress Outgoing(string receipient, long total)
+        {
+            var progress = new Progress(false, receipient, total, Console.CursorTop);
+            progress.Print();
+            Console.WriteLine();
+            return progress;
+        }
+
+        public void Update(long newProgress)
+        {
+            _progress = newProgress;
+            Print();
+        }
+        
+        private void Print()
+        {
+            lock (Console.Out)
+            {
+                var oldLeft = Console.CursorLeft;
+                var oldTop = Console.CursorTop;
+                Console.SetCursorPosition(0, _cursorTop);
+                Console.Write($"{(_incoming ? "Retrieving from:" : "Send to:")} {_to}: {(double)_progress / _total:P} - {ToFileSize(_progress)}/{ToFileSize(_total)}");
+                Console.SetCursorPosition(oldLeft, oldTop);
+            }
         }
 
         public static string ToFileSize(long size, bool useBinaryMode = false)

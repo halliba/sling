@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -12,6 +13,8 @@ namespace Sling
 
     public class ReceiveWorker : Worker
     {
+        private readonly List<Guid> _rejectedFiles = new List<Guid>();
+
         private readonly UdpClient _udpClient;
         private AnnounceModel _model;
 
@@ -32,12 +35,15 @@ namespace Sling
                 var received = _udpClient.ReceiveAsync().Result;
                 var rawText = Encoding.Unicode.GetString(received.Buffer);
                 _model = JsonConvert.DeserializeObject<AnnounceModel>(rawText);
+                if (_rejectedFiles.Contains(_model.Id))
+                    continue;
 
                 remoteEndPoint = received.RemoteEndPoint;
                 var sender = _model.Sender ?? Dns.GetHostEntryAsync(remoteEndPoint.Address).Result.HostName;
 
                 var accepted = _acceptFileCallback(_model.Filename, _model.FileSize, sender, remoteEndPoint.Address);
                 if (accepted) waitForFile = false;
+                else _rejectedFiles.Add(_model.Id);
             }
 
             if (FilePath == null) FilePath = _model.Filename;
@@ -84,9 +90,10 @@ namespace Sling
                 throw new Exception("No magic number");
             var fileLength = BitConverter.ToInt64(bytes, 4);
 
+            var progress = Progress.Incoming(_model.Sender, fileLength);
             using (var fileStream = File.Open(FilePath, FileMode.Create))
             {
-                stream.CopyTo(fileStream, BufferSize, fileLength, prog => Progress.Print(fileLength, prog));
+                stream.CopyTo(fileStream, BufferSize, fileLength, prog => progress.Update(prog));
             }
             return ExitCodes.Ok;
         }

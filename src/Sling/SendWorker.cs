@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace Sling
@@ -21,18 +22,18 @@ namespace Sling
 
         public override int Run()
         {
-            var code = Announce();
-            if (code != 0)
-                return code;
+            BeginAnnounceAsync();
 
-            code = WaitAndSendFile();
-            return code;
+            WaitAndSendFile();
+
+            return ExitCodes.Ok;
         }
 
-        private int Announce()
+        private async void BeginAnnounceAsync()
         {
             var model = new AnnounceModel
             {
+                Id = Guid.NewGuid(),
                 Sender = Environment.MachineName,
                 Filename = Path.GetFileName(FilePath),
                 FileSize = new FileInfo(FilePath).Length,
@@ -40,38 +41,58 @@ namespace Sling
             };
             var jsonModel = JsonConvert.SerializeObject(model);
             var rawModel = Encoding.Unicode.GetBytes(jsonModel);
-            _udpClient.SendAsync(rawModel, rawModel.Length, new IPEndPoint(IPAddress.Broadcast, Port));
-            return ExitCodes.Ok;
+            var ipEndPoint = new IPEndPoint(IPAddress.Broadcast, Port);
+            try
+            {
+                while (true)
+                {
+                    await _udpClient.SendAsync(rawModel, rawModel.Length, ipEndPoint);
+                    await Task.Delay(700);
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+            }
         }
 
-        private int WaitAndSendFile()
+        private void WaitAndSendFile()
         {
             _tcpListener = new TcpListener(new IPEndPoint(IPAddress.Any, _port));
             _tcpListener.Start();
 
-            using (var client = _tcpListener.AcceptTcpClientAsync().Result)
+            while (true)
             {
-                using (var stream = client.GetStream())
+                var client = _tcpListener.AcceptTcpClientAsync().Result;
+                InitJob(client);
+            }
+        }
+
+        private async void InitJob(TcpClient client)
+        {
+            await Task.Run(() =>
+            {
+                using (client)
                 {
-                    var bytes = new byte[12];
-                    stream.Read(bytes, 0, 12);
-                    if (!IsAccept(stream, bytes))
-                        throw new Exception("no accept");
-
-                    var fileInfo = new FileInfo(FilePath);
-                    var fileLength = fileInfo.Length;
-                    var prefix = BitConverter.GetBytes(MagicNumber).Concat(BitConverter.GetBytes(fileLength)).ToArray();
-                    stream.Write(prefix, 0, 12);
-
-                    using (var fileStream = fileInfo.OpenRead())
+                    using (var stream = client.GetStream())
                     {
-                        fileStream.CopyTo(stream, BufferSize, fileLength, prog => Progress.Print(fileLength, prog));
+                        var bytes = new byte[12];
+                        stream.Read(bytes, 0, 12);
+                        if (!IsAccept(stream, bytes))
+                            throw new Exception("no accept");
+
+                        var fileInfo = new FileInfo(FilePath);
+                        var fileLength = fileInfo.Length;
+                        var prefix = BitConverter.GetBytes(MagicNumber).Concat(BitConverter.GetBytes(fileLength)).ToArray();
+                        stream.Write(prefix, 0, 12);
+
+                        var progress = Progress.Outgoing(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString(), fileLength);
+                        using (var fileStream = fileInfo.OpenRead())
+                        {
+                            fileStream.CopyTo(stream, BufferSize, fileLength, prog => progress.Update(prog));
+                        }
                     }
                 }
-            }
-            _tcpListener.Stop();
-
-            return ExitCodes.Ok;
+            });
         }
 
         private bool IsAccept(Stream stream, byte[] bytes)
@@ -81,7 +102,7 @@ namespace Sling
 
             var size = BitConverter.ToInt64(bytes, 4);
             var data = new byte[size];
-            stream.Read(data, 0, (int)size);
+            stream.Read(data, 0, (int) size);
             var rawText = Encoding.Unicode.GetString(data);
             var model = JsonConvert.DeserializeObject<AcceptModel>(rawText);
             if (!string.Equals(model.Filename, Path.GetFileName(FilePath), StringComparison.Ordinal))

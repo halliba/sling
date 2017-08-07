@@ -1,7 +1,11 @@
-﻿namespace Sling
+﻿using System;
+
+namespace Sling
 {
     internal class AnnounceModel
     {
+        public Guid Id { get; set; }
+
         public string Sender { get; set; }
 
         public string Filename { get; set; }
